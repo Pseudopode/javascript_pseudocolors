@@ -1,0 +1,1 @@
+HTML5 canvas & javascript example of a pseucolor implementation. Blog post (with more details): http://podeplace.blogspot.fr/2012/
