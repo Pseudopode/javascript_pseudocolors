@@ -1,0 +1,118 @@
+<html>
+<head>
+
+<script>
+
+	//canvas of the image to be colored
+	var cvs;
+	var ctx;
+
+	//canvas to grab colormap pixels
+	var colormap = new Image();
+	var colormapCVS = document.createElement("canvas");
+	var colormapCTX = colormapCVS.getContext("2d");
+	
+	function init(){
+		cvs = document.getElementById("c");
+		ctx = cvs.getContext("2d");
+	
+		var img1 = new Image();
+	
+		img1.onload= function(){
+			cvs.width = img1.width;
+			cvs.height = img1.height;
+			ctx.drawImage(img1,0,0);
+			
+			/* //grayscale the image
+			var imageData = ctx.getImageData(0, 0, cvs.width, cvs.height);
+			var data = imageData.data;
+
+			for(var i = 0; i < data.length; i += 4) {
+				var brightness = 0.34 * data[i] + 0.5 * data[i + 1] + 0.16 * data[i + 2];
+				data[i] = brightness; // red
+				data[i + 1] = brightness; // green
+				data[i + 2] = brightness; // blue
+			}
+			ctx.putImageData(imageData,0,0);
+			ctx.drawImage(img1,0,0);*/
+		}
+		img1.src = "./earth.jpg";
+	};
+	
+	function grayscale(){
+		cvs = document.getElementById("c");
+		ctx = cvs.getContext("2d");
+		
+		//grayscale the image
+		var imageData = ctx.getImageData(0, 0, cvs.width, cvs.height);
+		var data = imageData.data;
+
+		for(var i = 0; i < data.length; i += 4) {
+			var brightness = 0.34 * data[i] + 0.5 * data[i + 1] + 0.16 * data[i + 2];
+			//YUV -> PAL/NTSC
+			//var brightness = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+			data[i] = brightness; // red
+			data[i + 1] = brightness; // green
+			data[i + 2] = brightness; // blue
+		}
+		ctx.putImageData(imageData,0,0);
+		
+		var divMap = document.getElementById("map");
+		divMap.style.display = "";
+	}
+	
+	function recolor(_src){
+			
+		//once the colormap is loaded, we grab the pixel content of the canvas
+		colormap.onload= function(){	
+			//grab colormap pixels
+			colormapCVS.width = colormap.width;
+			colormapCVS.height = colormap.height;
+			colormapCTX.drawImage(colormap,0,0);
+			
+			var colormapData = colormapCTX.getImageData(0,0, colormap.width, colormap.height);
+
+			//grab the pixels of the image to colorize
+			var myImageData = ctx.getImageData(0,0, cvs.width, cvs.height);
+			//faster access
+			var dataSrc = myImageData.data;
+			var dataRes = myImageData.data;
+			var height = cvs.height;
+			var width = cvs.width;
+			
+			//loop on each pixel
+			for(var y = 0; y < height; y++){
+				for(var x = 0; x < width; x++){
+					index = (x + y * width) * 4;
+								
+					//we grab the color from one channel (the red one)
+					var luminosityValue = dataSrc[index+0];
+
+					//we retrieve the corresponding (R,G,B) triplet from the colormap
+					//we rewrite the new color
+					dataRes[index+0] = colormapData.data[luminosityValue* 4+0]; //R
+					dataRes[index+1] = colormapData.data[luminosityValue* 4+1]; //G
+					dataRes[index+2] = colormapData.data[luminosityValue* 4+2]; //B
+					//dataRes[index+3] = 255; //no need to change alpha value
+					
+				}
+			}
+			myImageData.data = dataRes;
+			ctx.putImageData(myImageData,0,0);
+		}	
+		colormap.src = _src;
+	};
+</script>
+
+</head>
+<body onload="init();">
+	<canvas id="c"></canvas>
+	<button onclick="grayscale();">Grayscale the image first !</button>
+	<div id="map" style="display:none">
+		Now click on one colormap :
+		<img width="10" height="256" src="./colormap1.png" onClick="recolor('colormap1.png')"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+		<img width="10" height="256" src="./colormap2.png" onClick="recolor('colormap2.png')">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+		<img width="10" height="256" src="./colormap3.png" onClick="recolor('colormap3.png')"> 
+	</div>
+</body>
+</html>
